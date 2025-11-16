@@ -1,20 +1,25 @@
-FROM jitesoft/tesseract-ocr:5-latest
+# 1) Imagen base con Node (funciona sin problemas en Railway)
+FROM node:18-bullseye
 
-# Cambiar a usuario root para poder usar apt-get
-USER root
+# 2) Instalar tesseract + idioma español + inglés
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
 
-# Instalar Node.js y npm dentro del contenedor
-RUN apt-get update && \
-    apt-get install -y nodejs npm && \
-    rm -rf /var/lib/apt/lists/*
-
+# 3) Carpeta de trabajo
 WORKDIR /usr/src/app
 
+# 4) Copiar package.json e instalar dependencias
 COPY package.json ./
 RUN npm install --production
 
+# 5) Copiar servidor
 COPY index.js ./
 
+# 6) Exponer puerto para Railway
 EXPOSE 3000
 
+# 7) Comando final
 CMD ["npm", "start"]
