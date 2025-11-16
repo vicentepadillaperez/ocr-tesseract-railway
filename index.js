@@ -4,14 +4,19 @@ import { execFile } from 'child_process';
 
 const app = express();
 const upload = multer({ dest: '/tmp' });
-const PORT = process.env.PORT || 3000;
 
-// Endpoint de salud
+// PORT obligatorio en Railway
+const PORT = process.env.PORT;
+if (!PORT) {
+  throw new Error("Railway PORT env var not found");
+}
+
+// Healthcheck
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Endpoint principal de OCR
+// OCR endpoint
 app.post('/ocr', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -21,16 +26,9 @@ app.post('/ocr', upload.single('file'), (req, res) => {
   const psm = req.body.psm || '6';
   const oem = req.body.oem || '1';
 
-  // Ejecutamos Tesseract dentro del contenedor Docker
   execFile(
     'tesseract',
-    [
-      req.file.path,
-      'stdout',       // salida por consola
-      '-l', lang,     // idiomas
-      '--oem', oem,   // engine mode (LSTM)
-      '--psm', psm    // page segmentation mode
-    ],
+    [req.file.path, 'stdout', '-l', lang, '--oem', oem, '--psm', psm],
     { maxBuffer: 10 * 1024 * 1024 },
     (error, stdout, stderr) => {
       if (error) {
